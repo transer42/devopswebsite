@@ -71,17 +71,53 @@
 	    <article class="blog-post px-3 py-5 p-md-5">
 		    <div class="container">
 			    <header class="blog-post-header">
-				    <h2 class="title mb-2">TITLE</h2>
-				    <div class="meta mb-3"><span class="date">Published DATE</span></div>
+				    <h2 class="title mb-2">Side Quest</h2>
+				    <div class="meta mb-3"><span class="date">Published February 12, 2022</span></div>
 			    </header>
 			    
 			    <div class="blog-post-body">
 				    <figure class="blog-banner">
-				        <a href="https://made4dev.com"><img class="img-fluid" src="assets/images/blog/blog-post-banner.jpg" alt="image"></a>
-				        <figcaption class="mt-2 text-center image-caption">Image Credit: <a href="https://made4dev.com?ref=devblog" target="_blank">made4dev.com (Premium Programming T-shirts)</a></figcaption>
+				        <a href="https://made4dev.com"><img class="img-fluid" src="assets/images/blog/post2/jenkins.png" alt="image"></a>
+				        </a></figcaption>
 				    </figure>
-				    <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. </p>
-				    
+				    <p>I took a little bit of a detour from the Cloud Resume Challenge.  I'm interviewing with a company I'd very much like to work with, and I'd noticed in the job description they'd mentioned Jenkins a few times.  Jenkins has been on my radar to play with, so I thought I'd spend some time going through 
+						<a href="https://medium.com/@SylvesterYiadom/integrate-jenkins-with-aws-part-i-e51f141b7ec2">this walkthrough</a> I'd found a few weeks ago.</p>
+					<p>It seemed pretty simple:</p>
+					<ul>
+						<li>Setup an EC2 instance, assign an EIP and set up the security group to allow ssh and http on 8080</li>
+						<li>Connect and install Jenkins, Git, and Maven installed, then set Jenkins password</li>
+						<li>Create an AMI template of the instance</li>
+						<li>Create IAM role to allow master image the ability to spin up new instances</li>
+						<li>Update the security group to allow the Jenkins master to connect to new images</li>
+						<li>Within Jenkins, add and configure EC2 plugin</li>
+						<li>Set up a workernode that uses the AMI created earlier</li>
+						<li>Create a new project using the EC2 workernode and a test GitHub repository to build a Maven project on the new instance</li>
+						<li>Build!</li>
+					</ul>
+					<p>Of course, it's never quite that simple.  The first build attempt kept spawn new instances then terminating them.  A look at the logs showed that by default, Jenkins was configured to connect as root, not the default ec2user.   I stopped the build, updated the workernode configuration in Jenkins, and tried another build.</p>
+					<p>Second build was….better.  Only one instance was created this time.  The logs indicated a successful connection, the code was retrieved from GitHub, and all the required modules were downloaded.  However, the build ultimately failed with this error:</p>
+
+					<code>[ERROR] Failed to execute goal io.spring.javaformat:spring-javaformat-maven-plugin:0.0.31:validate (default) on project spring-petclinic: Execution default of goal io.spring.javaformat:spring-javaformat-maven-plugin:0.0.31:validate failed: An API incompatibility was encountered while executing io.spring.javaformat:spring-javaformat-maven-plugin:0.0.31:validate: java.lang.UnsupportedClassVersionError: io/spring/javaformat/eclipse/jdt/jdk11/internal/formatter/DefaultCodeFormatter has been compiled by a more recent version of the Java Runtime (class file version 55.0), this version of the Java Runtime only recognizes class file versions up to 52.0</code>
+					</br>	
+					</br>				
+					<p>It seems as though the walkthrough is old enough that the proscribed version of Java is now too old for the test project, so I needed to roll back some of the work.  I went back to the Jenkins master image, updated Java to the latest version and set it to be the default.  Then I created a new AMI, and updated the AMI ID in the workernode configuration on Jenkins.</p>
+						
+
+					<p>Tried to build one more time, and…</p>
+					<code style="color:black;">
+						SUCCESS!!</br>
+						[INFO] ------------------------------------------------------------------------</br>
+						[INFO] BUILD SUCCESS</br>
+						[INFO] ------------------------------------------------------------------------</br>
+						[INFO] Total time: 04:01 min</br>
+						[INFO] Finished at: 2022-02-12T17:50:10Z</br>
+						[INFO] Final Memory: 51M/124M</br>
+						[INFO] ------------------------------------------------------------------------</br>
+						Finished: SUCCESS</br>
+						</code>
+					</br>
+					<p>This was a fun little project.  I started to get an idea of how Jenkins orchestrates deploying new EC2 images, and I think I'll try another project or two in the future.  There's something a little magical about automation when it works, and I get such a kick out of it.</p>
+
 
 
 				
